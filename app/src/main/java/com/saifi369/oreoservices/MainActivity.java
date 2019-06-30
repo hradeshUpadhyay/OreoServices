@@ -16,14 +16,8 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-
     public static final int JOB_ID = 1001;
-    private BroadcastReceiver mReceiver=new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Toast.makeText(context, "Download Completed", Toast.LENGTH_SHORT).show();
-        }
-    };
+    public static final String TAG = "MyTag";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,34 +25,35 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
-    public void runCode(View view) {
+    //this method schedules the job
+    public void scheduleService(View view){
 
         JobScheduler jobScheduler= (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
 
-        JobInfo jobInfo=new JobInfo.Builder(JOB_ID,new ComponentName(this,MyDownloadJob.class))
+        ComponentName componentName= new ComponentName(this,MyDownloadJob.class);
+        JobInfo jobInfo=new JobInfo.Builder(JOB_ID,componentName)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
                 .setMinimumLatency(0)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .setPersisted(true)
                 .build();
 
-        jobScheduler.schedule(jobInfo);
+        int result = jobScheduler.schedule(jobInfo);
+
+        if(result == JobScheduler.RESULT_SUCCESS)
+            Log.d(TAG, "scheduleService: Job Scheduled");
+        else
+            Log.d(TAG, "scheduleService: Job not scheduled");
 
 
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
+    //this method cancels the scheduled job
+    public void cancelService(View view){
 
-        LocalBroadcastManager.getInstance(getApplicationContext())
-                .registerReceiver(mReceiver,new IntentFilter(MyDownloadJob.SEVICE_MESSAGE));
+        JobScheduler jobScheduler= (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+        jobScheduler.cancel(JOB_ID);
+        Log.d(TAG, "cancelService: job cancelled");
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        LocalBroadcastManager.getInstance(getApplicationContext())
-                .unregisterReceiver(mReceiver);
-    }
 
 }
